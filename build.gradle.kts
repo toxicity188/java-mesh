@@ -11,7 +11,7 @@ plugins {
 
 val projectVersion = property("project_version").toString()
 
-group = "kr.toxicity.library.javamesh"
+group = "io.github.toxicity188.javamesh"
 version = projectVersion
 
 repositories {
