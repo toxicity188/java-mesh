@@ -80,7 +80,7 @@ public final class MeshBuilder {
      * @param transformation new composite transformation
      * @return this builder
      * @throws NullPointerException if the matrix is null
-     * @since 0.0.1
+     * @since 0.0.2
      */
     public @NotNull MeshBuilder transformation(@NotNull Matrix4f transformation) {
         this.transformation = new Matrix4f(Objects.requireNonNull(transformation));

@@ -26,7 +26,7 @@ public interface MeshParseResult {
      * Returns the source material identifier when available.
      * @param index polygon index in {@link #toShape()} order
      * @return the material identifier, or null when unavailable
-     * @since 0.0.1
+     * @since 0.0.2
      */
     default @Nullable String material(int index) {
         return null;
