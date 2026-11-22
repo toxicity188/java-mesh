@@ -11,14 +11,14 @@ import org.joml.Vector3f;
 
 import java.util.*;
 
-final class MeshRectangles {
+final class MeshParallelograms {
     private final MeshNamedImage images;
     private final MeshTriangleName triangles;
     private final List<Triangle> faces = new ArrayList<>();
     private final Map<Edge, Owners> edges = new HashMap<>();
     int shapeCount;
 
-    MeshRectangles(MeshNamedImage images, MeshTriangleName triangles) {
+    MeshParallelograms(MeshNamedImage images, MeshTriangleName triangles) {
         this.images = images;
         this.triangles = triangles;
     }
@@ -75,8 +75,8 @@ final class MeshRectangles {
         for (int i = 0; i < faces.size(); i++) {
             var t = faces.get(i);
             if (consumed[i] || !t.matrix.transformation().isFinite()) continue;
-            var rectangle = merge(i, t, consumed);
-            if (rectangle != null) models.add(rectangle);
+            var parallelogram = merge(i, t, consumed);
+            if (parallelogram != null) models.add(parallelogram);
             else MeshModel.create(t.face == MeshFace.SINGLE ? triangles.single() : triangles.duplex(), t.matrix, models);
         }
     }
@@ -97,7 +97,7 @@ final class MeshRectangles {
                 if (other.edges[j] != edge || other.edges[(j + 1) % 3].count > 2 || other.edges[(j + 2) % 3].count > 2
                         || !c.equals(other.points[j]) || !a.equals(other.points[(j + 1) % 3])) continue;
                 var b = other.points[(j + 2) % 3];
-                var matrix = MeshMath.rectangleMat(a.position(), b.position(), c.position(), d.position());
+                var matrix = MeshMath.parallelogramMat(a.position(), b.position(), c.position(), d.position());
                 if (matrix == null) continue;
                 consumed[edge.second] = true;
                 return new MeshModel(t.face == MeshFace.SINGLE ? triangles.single() : triangles.duplex(), t.matrix.tint(), matrix);

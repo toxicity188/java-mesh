@@ -99,13 +99,15 @@ final class MeshMath {
         return mat.translateLocal(-p0.x + 0.5F, p0.y + 0.5F, -p0.z + 0.5F);
     }
 
-    static @Nullable Matrix4f rectangleMat(Vector3f a, Vector3f b, Vector3f c, Vector3f d) {
+    static @Nullable Matrix4f parallelogramMat(Vector3f a, Vector3f b, Vector3f c, Vector3f d) {
         var x = new Vector3d(b).sub(a);
         var y = new Vector3d(d).sub(a);
         var width = x.length();
         var height = y.length();
         var tolerance = 1e-9 + 1e-6 * min(width, height);
-        if (min(width, height) <= tolerance || abs(x.dot(y)) > 1e-6 * width * height) return null;
+        var area = x.cross(y, new Vector3d()).length();
+        // Keep the shorter altitude above closure noise, including for nearly collinear edges.
+        if (min(width, height) <= tolerance || area <= max(1e-6 * width * height, tolerance * max(width, height))) return null;
         // Closure in 3D checks the opposite edges and coplanarity together.
         if (new Vector3d(c).sub(a).sub(x).sub(y).length() > tolerance) return null;
         // The shared face spans half a unit along local -X and +Y from the origin.
@@ -172,7 +174,7 @@ final class MeshMath {
             return image.rgb(
                 clamp(round(pc.x), 0, width - 1),
                 clamp(round(pc.y), 0, height - 1)
-            );
+            ) & 0x00FFFFFF;
         }
 
         var r = (int) (sumR / count);

@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-final class RectangleTest {
+final class ParallelogramTest {
     private static final MeshTriangleName NAMES = MeshTriangleName.of("tri", "tri2");
 
     private static MeshBuilder builder(boolean optimize) {
@@ -49,11 +49,19 @@ final class RectangleTest {
     }
 
     @Test void cornersAndFront() {
+        checkCorners(List.of(A, B, C, D));
+    }
+
+    @Test void shearedCornersAndFront() {
+        checkCorners(List.of(A, B, point(4, 2, 0), point(1, 2, 0)));
+    }
+
+    private static void checkCorners(List<MeshPoint> input) {
         for (float angle : new float[]{0, 0.43f}) {
             for (float tilt : new float[]{0, 0.81f}) {
                 for (var face : MeshFace.values()) {
                     var corners = new ArrayList<MeshPoint>();
-                    for (var p : List.of(A, B, C, D)) {
+                    for (var p : input) {
                         corners.add(new MeshPoint(new Vector3f(p.position()).rotateZ(angle).rotateX(tilt).add(2, -1, 3)));
                     }
                     if (face == MeshFace.DOUBLE) Collections.reverse(corners);
@@ -135,7 +143,32 @@ final class RectangleTest {
         fallback(MeshShape.of(A, B, point(4, 2, 0), D));
         fallback(MeshShape.of(A, B, point(1, 0.5f, 0), C, D));
         fallback(MeshShape.of(A, A, B));
+        var thin = point(1, 1e-8f, 0);
+        var far = point(4, 1e-8f, 0);
+        fallback(MeshShape.of(A, B, far), MeshShape.of(A, far, thin));
         fallback(new MeshShape(List.of(A, B, C), "one"), new MeshShape(List.of(A, C, D), "two"));
+    }
+
+    @Test void sampledAndFallbackTintsUseRgb() {
+        var a = new MeshPoint(A.position(), new Vector2f(0, 1));
+        var b = new MeshPoint(B.position(), new Vector2f(0, 0));
+        var c = new MeshPoint(C.position(), new Vector2f(1, 1));
+        var d = new MeshPoint(D.position(), new Vector2f(0, 0.99f));
+        var input = List.of(new MeshShape(List.of(a, b, c), "img"), new MeshShape(List.of(a, c, d), "img"));
+        for (int alpha : new int[]{0, 128, 255}) {
+            var image = new BufferedImage(8, 8, BufferedImage.TYPE_INT_ARGB);
+            for (int y = 0; y < 8; y++) {
+                for (int x = 0; x < 8; x++) image.setRGB(x, y, (alpha << 24) | 0x123456);
+            }
+            var textures = Map.of("img", MeshImage.from(image));
+            var original = models(builder(false).image(textures).load(input));
+            assertEquals(6, original.size());
+            for (var part : original) {
+                var tint = part.getAsJsonObject().getAsJsonArray("tints").get(0).getAsJsonObject();
+                assertEquals(0x123456, tint.get("value").getAsInt());
+            }
+            assertEquals(1, models(builder(true).image(textures).load(input)).size());
+        }
     }
 
     @Test void objMaterialBoundaries() throws IOException {

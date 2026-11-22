@@ -120,7 +120,7 @@ public final class MeshBuilder {
             MeshFace.inferAndBuild(shapes, this::load);
             return this;
         }
-        var batch = new MeshRectangles(image, name);
+        var batch = new MeshParallelograms(image, name);
         MeshFace.inferAndBuild(shapes, (shape, face) -> batch.add(shape, face,
                 source == null ? null : source.material(batch.shapeCount)));
         batch.emit(models);
@@ -140,7 +140,7 @@ public final class MeshBuilder {
      */
     public @NotNull MeshBuilder load(@NotNull MeshShape shape, @NotNull MeshFace face) {
         if (!customModifier) {
-            var batch = new MeshRectangles(image, name);
+            var batch = new MeshParallelograms(image, name);
             batch.add(shape, face, null);
             batch.emit(models);
             return this;
