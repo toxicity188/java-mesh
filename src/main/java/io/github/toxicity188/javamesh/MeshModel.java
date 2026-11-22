@@ -11,6 +11,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 
 import java.util.List;
 
@@ -30,9 +31,12 @@ record MeshModel(
         .m01(1F)
         .m31(0.5F);
 
-    static @NotNull JsonObject composite(@NotNull List<MeshModel> models) {
+    static @NotNull JsonObject composite(@NotNull List<MeshModel> models, @NotNull Matrix4f transformation) {
         var json = new JsonObject();
         json.addProperty("type", TYPE_COMPOSITE);
+        if ((transformation.properties() & Matrix4fc.PROPERTY_IDENTITY) == 0) {
+            json.add("transformation", MeshMath.toJson(transformation));
+        }
         var arr = new JsonArray(models.size());
         for (MeshModel model : models) {
             arr.add(model.toJson());

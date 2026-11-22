@@ -16,7 +16,7 @@ import java.util.*;
 import java.util.function.Consumer;
 
 /**
- * Compatible triangle pairs automatically use one instance of the same model. A custom matrix modifier disables merging.
+ * Compatible triangle pairs automatically use one instance of the same model.
  * <p>
  * Builds Minecraft resource-pack model JSON from parsed mesh polygons.
  * <p>
@@ -40,10 +40,9 @@ import java.util.function.Consumer;
 public final class MeshBuilder {
 
     private final MeshTriangleName name;
-    private boolean customModifier;
     private MeshNamedImage image = MeshNamedImage.EMPTY;
     private final List<MeshModel> models = new ArrayList<>();
-    private Consumer<Matrix4f> matrixModifier = mat -> {};
+    private Matrix4f transformation = new Matrix4f();
 
     /**
      * Creates a builder configured with the model ids used for single-sided and double-sided triangles.
@@ -74,16 +73,32 @@ public final class MeshBuilder {
     }
 
     /**
-     * Registers a callback that can mutate each triangle transform before JSON serialization.
+     * Replaces the whole-mesh transformation with a copy of the supplied matrix.
+     * The composite stores this matrix once, including when it is the identity.
+     * For example, {@code builder.transformation(new Matrix4f().scale(2))}.
      *
-     * @param matrixModifier callback applied to every finite triangle transformation matrix
+     * @param transformation new composite transformation
      * @return this builder
-     * @throws NullPointerException if {@code matrixModifier} is {@code null}
+     * @throws NullPointerException if the matrix is null
      * @since 0.0.1
      */
-    public @NotNull MeshBuilder matrixModifier(@NotNull Consumer<Matrix4f> matrixModifier) {
-        this.matrixModifier = Objects.requireNonNull(matrixModifier);
-        customModifier = true;
+    public @NotNull MeshBuilder transformation(@NotNull Matrix4f transformation) {
+        this.transformation = new Matrix4f(Objects.requireNonNull(transformation));
+        return this;
+    }
+
+    /**
+     * Immediately invokes the modifier once on the current composite transformation.
+     * Successive calls accumulate in call order and affect the entire mesh, including
+     * previously loaded shapes. Earlier versions invoked the callback per geometric unit.
+     *
+     * @param modifier callback that mutates the composite transformation
+     * @return this builder
+     * @throws NullPointerException if the modifier is null
+     * @since 0.0.1
+     */
+    public @NotNull MeshBuilder matrixModifier(@NotNull Consumer<Matrix4f> modifier) {
+        Objects.requireNonNull(modifier).accept(transformation);
         return this;
     }
 
@@ -116,10 +131,6 @@ public final class MeshBuilder {
     }
 
     private MeshBuilder load(List<MeshShape> shapes, MeshParseResult source) {
-        if (customModifier) {
-            MeshFace.inferAndBuild(shapes, this::load);
-            return this;
-        }
         var batch = new MeshParallelograms(image, name);
         MeshFace.inferAndBuild(shapes, (shape, face) -> batch.add(shape, face,
                 source == null ? null : source.material(batch.shapeCount)));
@@ -139,18 +150,9 @@ public final class MeshBuilder {
      * @since 0.0.1
      */
     public @NotNull MeshBuilder load(@NotNull MeshShape shape, @NotNull MeshFace face) {
-        if (!customModifier) {
-            var batch = new MeshParallelograms(image, name);
-            batch.add(shape, face, null);
-            batch.emit(models);
-            return this;
-        }
-        var n = face == MeshFace.SINGLE ? name.single() : name.duplex();
-        for (MeshMatrix mat : shape.toTriangleMat(image)) {
-            if (!mat.transformation().isFinite()) continue;
-            matrixModifier.accept(mat.transformation());
-            MeshModel.create(n, mat, models);
-        }
+        var batch = new MeshParallelograms(image, name);
+        batch.add(shape, face, null);
+        batch.emit(models);
         return this;
     }
 
@@ -161,7 +163,7 @@ public final class MeshBuilder {
      * @since 0.0.1
      */
     public @NotNull JsonObject toJson() {
-        return MeshModel.composite(models);
+        return MeshModel.composite(models, transformation);
     }
 }
 

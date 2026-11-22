@@ -8,6 +8,7 @@
 package io.github.toxicity188.javamesh;
 
 import org.joml.Vector3f;
+import org.joml.Matrix4f;
 
 import java.util.*;
 
@@ -76,12 +77,13 @@ final class MeshParallelograms {
             var t = faces.get(i);
             if (consumed[i] || !t.matrix.transformation().isFinite()) continue;
             var parallelogram = merge(i, t, consumed);
-            if (parallelogram != null) models.add(parallelogram);
-            else MeshModel.create(t.face == MeshFace.SINGLE ? triangles.single() : triangles.duplex(), t.matrix, models);
+            var model = t.face == MeshFace.SINGLE ? triangles.single() : triangles.duplex();
+            if (parallelogram != null) models.add(new MeshModel(model, t.matrix.tint(), parallelogram));
+            else MeshModel.create(model, t.matrix, models);
         }
     }
 
-    private MeshModel merge(int index, Triangle t, boolean[] consumed) {
+    private Matrix4f merge(int index, Triangle t, boolean[] consumed) {
         for (var edge : t.edges) if (edge.count > 2) return null;
         for (int i = 0; i < 3; i++) {
             var edge = t.edges[i];
@@ -100,7 +102,7 @@ final class MeshParallelograms {
                 var matrix = MeshMath.parallelogramMat(a.position(), b.position(), c.position(), d.position());
                 if (matrix == null) continue;
                 consumed[edge.second] = true;
-                return new MeshModel(t.face == MeshFace.SINGLE ? triangles.single() : triangles.duplex(), t.matrix.tint(), matrix);
+                return matrix;
             }
         }
         return null;
