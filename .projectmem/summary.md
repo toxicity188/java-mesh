@@ -6,10 +6,11 @@ _Last updated: 2026-11-22_
 A library for converting mesh models for use in Minecraft Java Edition.
 
 ## Recent issues
+- [DONE] #0001 Release verification via Gradle wrapper hit access denied on shared gradle-9.9.2-bin.zip.lck. [gradle/wrapper/gradle-wrapper.properties] (fixed)
 - [DONE] #legacy_4f2a Legacy issue: fix: group (fixed)
 
 ## Decisions
-- No decisions logged yet.
+- Publish from a GitHub Release whose tag exactly matches project_version. Reuse the Vanniktech Maven publication for Central and GitHub Packages and use the workflow GITHUB_TOKEN for Packages. [.github/workflows/release.yml]
 
 ## Notes
 - Initial Commit

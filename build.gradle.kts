@@ -19,7 +19,27 @@ repositories {
 }
 
 signing {
-    useGpgCmd()
+    val key = System.getenv("SIGNING_KEY")
+    val password = System.getenv("SIGNING_PASSWORD")
+    if (!key.isNullOrEmpty() && !password.isNullOrEmpty()) {
+        useInMemoryPgpKeys(
+            key,
+            password
+        )
+    } else useGpgCmd()
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/toxicity188/DynamicUV")
+            credentials {
+                username = providers.environmentVariable("GITHUB_ACTOR").orNull
+                password = providers.environmentVariable("PACKAGES_API_TOKEN").orNull
+            }
+        }
+    }
 }
 
 dependencies {
