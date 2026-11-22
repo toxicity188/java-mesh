@@ -5,9 +5,11 @@
  * See LICENSE.md file for full license text.
  */
 
+package io.github.toxicity188.javamesh;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import io.github.toxicity188.javamesh.*;
+import org.joml.Matrix4f;
 import io.github.toxicity188.javamesh.parser.MeshParseResult;
 import io.github.toxicity188.javamesh.parser.MeshParseContext;
 import io.github.toxicity188.javamesh.parser.obj.ObjParser;
@@ -20,16 +22,23 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 final class ParallelogramTest {
     private static final MeshTriangleName NAMES = MeshTriangleName.of("tri", "tri2");
 
-    private static MeshBuilder builder(boolean optimize) {
-        var builder = MeshBuilder.of(NAMES);
-        return optimize ? builder : builder.matrixModifier(matrix -> {});
+    private static JsonArray triangleModels(List<MeshShape> shapes, Map<String, MeshImage> textures) {
+        var parts = new ArrayList<MeshModel>();
+        var images = new MeshNamedImage(textures);
+        MeshFace.inferAndBuild(shapes, (shape, face) -> {
+            for (var matrix : shape.toTriangleMat(images)) {
+                if (matrix.transformation().isFinite()) {
+                    MeshModel.create(face == MeshFace.SINGLE ? NAMES.single() : NAMES.duplex(), matrix, parts);
+                }
+            }
+        });
+        return MeshModel.composite(parts, new Matrix4f()).getAsJsonArray("models");
     }
 
     private static MeshPoint point(float x, float y, float z) {
@@ -45,7 +54,7 @@ final class ParallelogramTest {
 
     private static void fallback(MeshShape... shapes) {
         var input = List.of(shapes);
-        assertEquals(builder(false).load(input).toJson(), builder(true).load(input).toJson());
+        assertEquals(triangleModels(input, Map.of()), models(MeshBuilder.of(NAMES).load(input)));
     }
 
     @Test void cornersAndFront() {
@@ -66,8 +75,8 @@ final class ParallelogramTest {
                     }
                     if (face == MeshFace.DOUBLE) Collections.reverse(corners);
                     var shape = new MeshShape(corners, null);
-                    var old = models(builder(false).load(shape, face));
-                    var result = models(builder(true).load(shape, face));
+                    var old = triangleModels(List.of(shape), Map.of());
+                    var result = models(MeshBuilder.of(NAMES).load(shape, face));
                     assertEquals(6, old.size());
                     assertEquals(1, result.size());
                     var model = result.get(0).getAsJsonObject();
@@ -103,16 +112,16 @@ final class ParallelogramTest {
         var first = MeshShape.of(A, B, C);
         var second = MeshShape.of(A, C, D);
         var input = List.of(first, second);
-        var result = models(builder(true).load(input));
+        var result = models(MeshBuilder.of(NAMES).load(input));
         assertEquals(1, result.size());
         assertEquals(NAMES.duplex(), result.get(0).getAsJsonObject().get("model").getAsString());
-        assertEquals(result, models(builder(true).load((MeshParseResult) () -> input)));
-        assertEquals(6, models(builder(true).load(List.of(first)).load(List.of(second))).size());
-        assertEquals(6, models(builder(false).load(input)).size());
+        assertEquals(result, models(MeshBuilder.of(NAMES).load((MeshParseResult) () -> input)));
+        assertEquals(6, models(MeshBuilder.of(NAMES).load(List.of(first)).load(List.of(second))).size());
+        assertEquals(6, triangleModels(input, Map.of()).size());
     }
 
     @Test void sharedFaceReachesAllThreeLegacyTriangleTips() {
-        var parts = models(builder(true).load(MeshShape.of(A, B, D), MeshFace.SINGLE));
+        var parts = models(MeshBuilder.of(NAMES).load(MeshShape.of(A, B, D), MeshFace.SINGLE));
         assertEquals(3, parts.size());
         var tips = new HashSet<Vector3f>();
         for (var part : parts) {
@@ -161,13 +170,13 @@ final class ParallelogramTest {
                 for (int x = 0; x < 8; x++) image.setRGB(x, y, (alpha << 24) | 0x123456);
             }
             var textures = Map.of("img", MeshImage.from(image));
-            var original = models(builder(false).image(textures).load(input));
+            var original = triangleModels(input, textures);
             assertEquals(6, original.size());
             for (var part : original) {
                 var tint = part.getAsJsonObject().getAsJsonArray("tints").get(0).getAsJsonObject();
                 assertEquals(0x123456, tint.get("value").getAsInt());
             }
-            assertEquals(1, models(builder(true).image(textures).load(input)).size());
+            assertEquals(1, models(MeshBuilder.of(NAMES).image(textures).load(input)).size());
         }
     }
 
@@ -187,10 +196,10 @@ final class ParallelogramTest {
             var bytes = geometry.formatted(material).getBytes(StandardCharsets.UTF_8);
             var source = ObjParser.INSTANCE.parse(MeshParseContext.builder("rectangle")
                     .asset("obj", () -> new ByteArrayInputStream(bytes)).build());
-            var optimized = models(builder(true).load(source));
-            assertEquals(optimized, models(builder(true).load(source)));
+            var optimized = models(MeshBuilder.of(NAMES).load(source));
+            assertEquals(optimized, models(MeshBuilder.of(NAMES).load(source)));
             if (material.equals("first")) assertEquals(1, optimized.size());
-            else assertEquals(models(builder(false).load(source)), optimized);
+            else assertEquals(triangleModels(source.toShape(), Map.of()), optimized);
         }
     }
 
@@ -203,18 +212,50 @@ final class ParallelogramTest {
         for (var shapes : List.of(List.of(new MeshShape(p, "img")), List.of(new MeshShape(p.subList(0, 3), "img"),
                 new MeshShape(List.of(p.get(0), p.get(2), p.get(3)), "img")))) {
             var textures = Map.of("img", MeshImage.from(image));
-            var old = models(builder(false).image(textures).load(shapes));
+            var old = triangleModels(shapes, textures);
             assertNotEquals(old.get(0).getAsJsonObject().get("tints"), old.get(3).getAsJsonObject().get("tints"));
-            assertEquals(old, models(builder(true).image(textures).load(shapes)));
+            assertEquals(old, models(MeshBuilder.of(NAMES).image(textures).load(shapes)));
         }
     }
 
-    @Test void modifierRunsPerTriangle() {
+    @Test void compositeTransformReplacesAndCopies() {
+        var builder = MeshBuilder.of(NAMES);
+        var initial = builder.toJson();
+        assertEquals(MeshMath.toJson(new Matrix4f()), initial.get("transformation"));
+        var supplied = new Matrix4f().rotateY(0.7f);
+        var expected = new Matrix4f(supplied).scale(2);
+        builder.matrixModifier(m -> m.translate(1, 2, 3))
+                .transformation(supplied)
+                .matrixModifier(m -> m.scale(2));
+        assertEquals(MeshMath.toJson(new Matrix4f().rotateY(0.7f)), MeshMath.toJson(supplied));
+        supplied.zero();
+        assertEquals(MeshMath.toJson(expected), builder.toJson().get("transformation"));
+        assertEquals(MeshMath.toJson(new Matrix4f()), initial.get("transformation"));
+    }
+
+    @Test void modifiersAccumulateImmediatelyOnParentOnly() {
         var quad = MeshShape.of(A, B, C, D);
-        var count = new AtomicInteger();
-        var expected = builder(false).matrixModifier(m -> m.translate(count.incrementAndGet(), 0, 0)).load(List.of(quad)).toJson();
-        count.set(0);
-        assertEquals(expected, builder(true).matrixModifier(m -> m.translate(count.incrementAndGet(), 0, 0)).load(List.of(quad)).toJson());
-        assertEquals(2, count.get());
+        var triangle = MeshShape.of(point(10, 1, 2), point(12, 1, 2), point(11, 3, 4));
+        var children = models(MeshBuilder.of(NAMES).load(quad, MeshFace.DOUBLE).load(List.of(triangle)));
+        var builder = MeshBuilder.of(NAMES).load(quad, MeshFace.DOUBLE);
+        var calls = new java.util.concurrent.atomic.AtomicInteger();
+        builder.matrixModifier(m -> {
+            calls.incrementAndGet();
+            m.translate(1, 2, 3);
+        });
+        assertEquals(1, calls.get());
+        builder.matrixModifier(m -> {
+            calls.incrementAndGet();
+            m.rotateY(0.7f).scale(2, 3, 4);
+        });
+        assertEquals(2, calls.get());
+        builder.load((MeshParseResult) () -> List.of(triangle));
+        var json = builder.toJson();
+        assertEquals(MeshMath.toJson(new Matrix4f().translate(1, 2, 3).rotateY(0.7f).scale(2, 3, 4)),
+                json.get("transformation"));
+        assertEquals(4, children.size());
+        assertEquals(children, json.get("models"));
+        assertEquals(json, builder.toJson());
+        assertEquals(2, calls.get());
     }
 }
