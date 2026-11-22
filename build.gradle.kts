@@ -33,7 +33,7 @@ publishing {
     repositories {
         maven {
             name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/toxicity188/DynamicUV")
+            url = uri("https://maven.pkg.github.com/toxicity188/java-mesh")
             credentials {
                 username = providers.environmentVariable("GITHUB_ACTOR").orNull
                 password = providers.environmentVariable("PACKAGES_API_TOKEN").orNull
