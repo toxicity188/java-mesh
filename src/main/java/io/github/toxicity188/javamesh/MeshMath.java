@@ -9,9 +9,11 @@ package io.github.toxicity188.javamesh;
 
 import com.google.gson.JsonArray;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
+import org.joml.Vector3d;
 
 import static java.lang.Math.*;
 
@@ -95,6 +97,28 @@ final class MeshMath {
         mat.m23(0.0f);
 
         return mat.translateLocal(-p0.x + 0.5F, p0.y + 0.5F, -p0.z + 0.5F);
+    }
+
+    static @Nullable Matrix4f rectangleMat(Vector3f a, Vector3f b, Vector3f c, Vector3f d) {
+        var x = new Vector3d(b).sub(a);
+        var y = new Vector3d(d).sub(a);
+        var width = x.length();
+        var height = y.length();
+        var tolerance = 1e-9 + 1e-6 * min(width, height);
+        if (min(width, height) <= tolerance || abs(x.dot(y)) > 1e-6 * width * height) return null;
+        // Closure in 3D checks the opposite edges and coplanarity together.
+        if (new Vector3d(c).sub(a).sub(x).sub(y).length() > tolerance) return null;
+        // The shared face spans half a unit along local -X and +Y from the origin.
+        x.mul(2, -2, 2);
+        y.mul(-2, 2, -2);
+        var normal = x.cross(y, new Vector3d()).normalize();
+        var matrix = new Matrix4f()
+                .m00((float) x.x).m01((float) x.y).m02((float) x.z)
+                .m10((float) y.x).m11((float) y.y).m12((float) y.z)
+                .m20((float) normal.x).m21((float) normal.y).m22((float) normal.z)
+                .m30(0.5f - a.x).m31(0.5f + a.y).m32(0.5f - a.z);
+        var determinant = matrix.determinant3x3();
+        return matrix.isFinite() && Float.isFinite(determinant) && determinant > 0 ? matrix : null;
     }
 
     static int sampleTriangleAverageColor(

@@ -6,6 +6,8 @@ _Last updated: 2026-11-22_
 A library for converting mesh models for use in Minecraft Java Edition.
 
 ## Recent issues
+- [DONE] #0003 Rectangle merging incorrectly requires additional model IDs and assumes a unit-square template. (fixed)
+- [DONE] #0002 Investigate single-model rectangle rendering for planar mesh regions while preserving tint and face sidedness [src/main/java/io/github/toxicity188/javamesh/MeshBuilder.java:126] (fixed)
 - [DONE] #0001 Release verification via Gradle wrapper hit access denied on shared gradle-9.9.2-bin.zip.lck. [gradle/wrapper/gradle-wrapper.properties] (fixed)
 - [DONE] #legacy_4f2a Legacy issue: fix: group (fixed)
 

@@ -101,9 +101,9 @@ public enum ObjParser implements MeshParser {
                         for (int i = 1; i < split.length; i++) {
                             indexes.add(parseI(split[i].split("/")).sub(ONE));
                         }
-                        f.add(new F(indexes, mtlRef));
+                        f.add(new F(indexes, map.get(mtlRef), mtlRef));
                     }
-                    case "usemtl" -> mtlRef = map.get(split[1]);
+                    case "usemtl" -> mtlRef = split[1];
                     default -> {}
                 }
             }
@@ -116,6 +116,11 @@ public enum ObjParser implements MeshParser {
         @NotNull List<Vector2f> vt,
         @NotNull List<F> f
     ) implements MeshParseResult {
+        @Override
+        public @Nullable String material(int index) {
+            return f.get(index).material();
+        }
+
 
         @Override
         public @NotNull List<MeshShape> toShape() {
@@ -128,7 +133,7 @@ public enum ObjParser implements MeshParser {
         }
     }
 
-    private record F(@NotNull List<Vector3i> indexes, @Nullable String texture) {}
+    private record F(@NotNull List<Vector3i> indexes, @Nullable String texture, @Nullable String material) {}
 
     private static final Vector3i ONE = new Vector3i(1);
 

@@ -1,0 +1,187 @@
+/*
+ * This source file is part of java-mesh.
+ * Copyright (c) 2026 toxicity188
+ * Licensed under the MIT License.
+ * See LICENSE.md file for full license text.
+ */
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import io.github.toxicity188.javamesh.*;
+import io.github.toxicity188.javamesh.parser.MeshParseResult;
+import io.github.toxicity188.javamesh.parser.MeshParseContext;
+import io.github.toxicity188.javamesh.parser.obj.ObjParser;
+import org.joml.Vector2f;
+import org.joml.Vector3f;
+import org.junit.jupiter.api.Test;
+
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+final class RectangleTest {
+    private static final MeshTriangleName NAMES = MeshTriangleName.of("tri", "tri2");
+
+    private static MeshBuilder builder(boolean optimize) {
+        var builder = MeshBuilder.of(NAMES);
+        return optimize ? builder : builder.matrixModifier(matrix -> {});
+    }
+
+    private static MeshPoint point(float x, float y, float z) {
+        return new MeshPoint(new Vector3f(x, y, z));
+    }
+
+    private static final MeshPoint A = point(0, 0, 0), B = point(3, 0, 0),
+            C = point(3, 2, 0), D = point(0, 2, 0);
+
+    private static JsonArray models(MeshBuilder builder) {
+        return builder.toJson().getAsJsonArray("models");
+    }
+
+    private static void fallback(MeshShape... shapes) {
+        var input = List.of(shapes);
+        assertEquals(builder(false).load(input).toJson(), builder(true).load(input).toJson());
+    }
+
+    @Test void cornersAndFront() {
+        for (float angle : new float[]{0, 0.43f}) {
+            for (float tilt : new float[]{0, 0.81f}) {
+                for (var face : MeshFace.values()) {
+                    var corners = new ArrayList<MeshPoint>();
+                    for (var p : List.of(A, B, C, D)) {
+                        corners.add(new MeshPoint(new Vector3f(p.position()).rotateZ(angle).rotateX(tilt).add(2, -1, 3)));
+                    }
+                    if (face == MeshFace.DOUBLE) Collections.reverse(corners);
+                    var shape = new MeshShape(corners, null);
+                    var old = models(builder(false).load(shape, face));
+                    var result = models(builder(true).load(shape, face));
+                    assertEquals(6, old.size());
+                    assertEquals(1, result.size());
+                    var model = result.get(0).getAsJsonObject();
+                    assertEquals(face == MeshFace.SINGLE ? NAMES.single() : NAMES.duplex(), model.get("model").getAsString());
+                    assertEquals(old.get(0).getAsJsonObject().get("tints"), model.get("tints"));
+                    verifyMatrix(model, corners);
+                }
+            }
+        }
+    }
+
+    private static void verifyMatrix(JsonObject model, List<MeshPoint> corners) {
+        var rows = model.getAsJsonArray("transformation");
+        float[] m = new float[16];
+        for (int i = 0; i < m.length; i++) {
+            m[i] = rows.get(i).getAsFloat();
+            assertTrue(Float.isFinite(m[i]));
+        }
+        var expected = corners.stream().map(p -> new Vector3f(p.position()).mul(-1, 1, -1).add(0.5f, 0.5f, 0.5f)).toList();
+        var origin = new Vector3f(m[3], m[7], m[11]);
+        int start = -1;
+        for (int i = 0; i < 4; i++) if (origin.distance(expected.get(i)) < 1e-5) start = i;
+        assertTrue(start >= 0);
+        var x = new Vector3f(m[0], m[4], m[8]).mul(-0.5f);
+        var y = new Vector3f(m[1], m[5], m[9]).mul(0.5f);
+        assertTrue(new Vector3f(origin).add(x).distance(expected.get((start + 1) % 4)) < 1e-5);
+        assertTrue(new Vector3f(origin).add(y).distance(expected.get((start + 3) % 4)) < 1e-5);
+        assertTrue(new Vector3f(origin).add(x).add(y).distance(expected.get((start + 2) % 4)) < 1e-5);
+        assertTrue(x.cross(y).normalize().distance(new Vector3f(-m[2], -m[6], -m[10])) < 1e-5);
+    }
+
+    @Test void independentShapesAndLoadBoundaries() {
+        var first = MeshShape.of(A, B, C);
+        var second = MeshShape.of(A, C, D);
+        var input = List.of(first, second);
+        var result = models(builder(true).load(input));
+        assertEquals(1, result.size());
+        assertEquals(NAMES.duplex(), result.get(0).getAsJsonObject().get("model").getAsString());
+        assertEquals(result, models(builder(true).load((MeshParseResult) () -> input)));
+        assertEquals(6, models(builder(true).load(List.of(first)).load(List.of(second))).size());
+        assertEquals(6, models(builder(false).load(input)).size());
+    }
+
+    @Test void sharedFaceReachesAllThreeLegacyTriangleTips() {
+        var parts = models(builder(true).load(MeshShape.of(A, B, D), MeshFace.SINGLE));
+        assertEquals(3, parts.size());
+        var tips = new HashSet<Vector3f>();
+        for (var part : parts) {
+            var m = part.getAsJsonObject().getAsJsonArray("transformation");
+            for (float x : new float[]{-0.5f, 0}) {
+                for (float y : new float[]{0, 0.5f}) {
+                    var corner = new Vector3f();
+                    for (int row = 0; row < 3; row++) {
+                        int i = row * 4;
+                        corner.setComponent(row, x * m.get(i).getAsFloat() + y * m.get(i + 1).getAsFloat()
+                                + m.get(i + 3).getAsFloat());
+                    }
+                    tips.add(corner);
+                }
+            }
+        }
+        for (var vertex : List.of(A, B, D)) {
+            assertTrue(tips.contains(new Vector3f(vertex.position()).mul(-1, 1, -1).add(0.5f, 0.5f, 0.5f)));
+        }
+    }
+
+    @Test void rejectInvalidPairs() {
+        var t = MeshShape.of(A, B, C);
+        fallback(t, MeshShape.of(D, C, A));
+        fallback(t, t);
+        fallback(t, MeshShape.of(A, C, D), MeshShape.of(A, C, point(0, 0, 1)));
+        fallback(MeshShape.of(A, B, C, point(0, 2, 0.1f)));
+        fallback(MeshShape.of(A, B, point(4, 2, 0), D));
+        fallback(MeshShape.of(A, B, point(1, 0.5f, 0), C, D));
+        fallback(MeshShape.of(A, A, B));
+        fallback(new MeshShape(List.of(A, B, C), "one"), new MeshShape(List.of(A, C, D), "two"));
+    }
+
+    @Test void objMaterialBoundaries() throws IOException {
+        String geometry = """
+                v 0 0 0
+                v 3 0 0
+                v 3 2 0
+                v 0 2 0
+                vt 0 0
+                usemtl first
+                f 1/1/1 2/1/1 3/1/1
+                usemtl %s
+                f 1/1/1 3/1/1 4/1/1
+                """;
+        for (String material : List.of("first", "second")) {
+            var bytes = geometry.formatted(material).getBytes(StandardCharsets.UTF_8);
+            var source = ObjParser.INSTANCE.parse(MeshParseContext.builder("rectangle")
+                    .asset("obj", () -> new ByteArrayInputStream(bytes)).build());
+            var optimized = models(builder(true).load(source));
+            assertEquals(optimized, models(builder(true).load(source)));
+            if (material.equals("first")) assertEquals(1, optimized.size());
+            else assertEquals(models(builder(false).load(source)), optimized);
+        }
+    }
+
+    @Test void directQuadAndTrianglesKeepDifferentTints() {
+        var image = new BufferedImage(8, 8, BufferedImage.TYPE_INT_RGB);
+        for (int y = 0; y < 8; y++) for (int x = 0; x < 8; x++) image.setRGB(x, y, x * 32 << 16);
+        var p = List.of(new MeshPoint(A.position(), new Vector2f(0, 0)),
+                new MeshPoint(B.position(), new Vector2f(1, 0)), new MeshPoint(C.position(), new Vector2f(1, 1)),
+                new MeshPoint(D.position(), new Vector2f(0, 1)));
+        for (var shapes : List.of(List.of(new MeshShape(p, "img")), List.of(new MeshShape(p.subList(0, 3), "img"),
+                new MeshShape(List.of(p.get(0), p.get(2), p.get(3)), "img")))) {
+            var textures = Map.of("img", MeshImage.from(image));
+            var old = models(builder(false).image(textures).load(shapes));
+            assertNotEquals(old.get(0).getAsJsonObject().get("tints"), old.get(3).getAsJsonObject().get("tints"));
+            assertEquals(old, models(builder(true).image(textures).load(shapes)));
+        }
+    }
+
+    @Test void modifierRunsPerTriangle() {
+        var quad = MeshShape.of(A, B, C, D);
+        var count = new AtomicInteger();
+        var expected = builder(false).matrixModifier(m -> m.translate(count.incrementAndGet(), 0, 0)).load(List.of(quad)).toJson();
+        count.set(0);
+        assertEquals(expected, builder(true).matrixModifier(m -> m.translate(count.incrementAndGet(), 0, 0)).load(List.of(quad)).toJson());
+        assertEquals(2, count.get());
+    }
+}

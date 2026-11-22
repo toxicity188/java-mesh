@@ -16,6 +16,8 @@ import java.util.*;
 import java.util.function.Consumer;
 
 /**
+ * Compatible triangle pairs automatically use one instance of the same model. A custom matrix modifier disables merging.
+ * <p>
  * Builds Minecraft resource-pack model JSON from parsed mesh polygons.
  * <p>
  * A builder instance collects triangulated mesh faces, applies an optional matrix transform,
@@ -38,6 +40,7 @@ import java.util.function.Consumer;
 public final class MeshBuilder {
 
     private final MeshTriangleName name;
+    private boolean customModifier;
     private MeshNamedImage image = MeshNamedImage.EMPTY;
     private final List<MeshModel> models = new ArrayList<>();
     private Consumer<Matrix4f> matrixModifier = mat -> {};
@@ -80,6 +83,7 @@ public final class MeshBuilder {
      */
     public @NotNull MeshBuilder matrixModifier(@NotNull Consumer<Matrix4f> matrixModifier) {
         this.matrixModifier = Objects.requireNonNull(matrixModifier);
+        customModifier = true;
         return this;
     }
 
@@ -94,7 +98,7 @@ public final class MeshBuilder {
      * @since 0.0.1
      */
     public @NotNull MeshBuilder load(@NotNull MeshParseResult result) {
-        return load(result.toShape());
+        return load(result.toShape(), result);
     }
 
     /**
@@ -108,7 +112,18 @@ public final class MeshBuilder {
      * @since 0.0.1
      */
     public @NotNull MeshBuilder load(@NotNull List<MeshShape> shapes) {
-        MeshFace.inferAndBuild(shapes, this::load);
+        return load(shapes, null);
+    }
+
+    private MeshBuilder load(List<MeshShape> shapes, MeshParseResult source) {
+        if (customModifier) {
+            MeshFace.inferAndBuild(shapes, this::load);
+            return this;
+        }
+        var batch = new MeshRectangles(image, name);
+        MeshFace.inferAndBuild(shapes, (shape, face) -> batch.add(shape, face,
+                source == null ? null : source.material(batch.shapeCount)));
+        batch.emit(models);
         return this;
     }
 
@@ -124,6 +139,12 @@ public final class MeshBuilder {
      * @since 0.0.1
      */
     public @NotNull MeshBuilder load(@NotNull MeshShape shape, @NotNull MeshFace face) {
+        if (!customModifier) {
+            var batch = new MeshRectangles(image, name);
+            batch.add(shape, face, null);
+            batch.emit(models);
+            return this;
+        }
         var n = face == MeshFace.SINGLE ? name.single() : name.duplex();
         for (MeshMatrix mat : shape.toTriangleMat(image)) {
             if (!mat.transformation().isFinite()) continue;

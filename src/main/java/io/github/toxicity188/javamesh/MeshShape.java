@@ -90,7 +90,7 @@ public record MeshShape(@NotNull @Unmodifiable List<MeshPoint> points, @Nullable
         return Collections.unmodifiableList(result);
     }
 
-    private @NotNull IntList triangulateEarClipping() {
+    @NotNull IntList triangulateEarClipping() {
         var projected = projectTo2D(points);
         var ccw = polygonArea2D(projected) > 0.0f;
 

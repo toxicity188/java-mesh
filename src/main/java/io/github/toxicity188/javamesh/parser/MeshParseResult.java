@@ -9,6 +9,7 @@ package io.github.toxicity188.javamesh.parser;
 
 import io.github.toxicity188.javamesh.MeshShape;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -21,6 +22,16 @@ import java.util.List;
  * @since 0.0.1
  */
 public interface MeshParseResult {
+    /**
+     * Returns the source material identifier when available.
+     * @param index polygon index in {@link #toShape()} order
+     * @return the material identifier, or null when unavailable
+     * @since 0.0.1
+     */
+    default @Nullable String material(int index) {
+        return null;
+    }
+
     /**
      * Returns the parsed polygons extracted from the mesh source.
      *
