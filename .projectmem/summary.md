@@ -6,7 +6,9 @@ _Last updated: 2026-11-22_
 A library for converting mesh models for use in Minecraft Java Edition.
 
 ## Recent issues
+- [OPEN] #0007 Annotation audit full suite fails composite identity assertion; check existing HEAD behavior. [src/test/java/io/github/toxicity188/javamesh/ParallelogramTest.java:224] (open)
 - [OPEN] #0004 Measure first rectangle rejection reasons on local CreateTest assets. (open)
+- [DONE] #0006 Audit JetBrains contracts: record collections are stored by reference and cannot promise unmodifiable access. [src/main/java/io/github/toxicity188/javamesh/MeshShape.java:38] (fixed)
 - [DONE] #0005 Generalize rectangle merging to affine parallelograms and normalize fallback tint to RGB. (fixed)
 - [DONE] #0003 Rectangle merging incorrectly requires additional model IDs and assumes a unit-square template. (fixed)
 - [DONE] #0002 Investigate single-model rectangle rendering for planar mesh regions while preserving tint and face sidedness [src/main/java/io/github/toxicity188/javamesh/MeshBuilder.java:126] (fixed)

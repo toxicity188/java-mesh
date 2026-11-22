@@ -126,7 +126,7 @@ public enum MeshFace {
     }
 
     private record VectorKey(int x, int y, int z) implements Comparable<VectorKey> {
-        static VectorKey from(Vector3f v) {
+        static @NotNull VectorKey from(@NotNull Vector3f v) {
             return new VectorKey(bits(v.x), bits(v.y), bits(v.z));
         }
 
@@ -142,5 +142,5 @@ public enum MeshFace {
         }
     }
 
-    private record Edge(VectorKey a, VectorKey b) {}
+    private record Edge(@NotNull VectorKey a, @NotNull VectorKey b) {}
 }

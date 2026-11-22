@@ -9,7 +9,9 @@ package io.github.toxicity188.javamesh;
 
 import com.google.gson.JsonObject;
 import io.github.toxicity188.javamesh.parser.MeshParseResult;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 
 import java.util.*;
@@ -67,6 +69,7 @@ public final class MeshBuilder {
      * @throws NullPointerException if {@code image} is {@code null}
      * @since 0.0.1
      */
+    @Contract(value = "null -> fail; !null -> this", mutates = "this")
     public @NotNull MeshBuilder image(@NotNull Map<String, MeshImage> image) {
         this.image = new MeshNamedImage(Collections.unmodifiableMap(Objects.requireNonNull(image)));
         return this;
@@ -82,6 +85,7 @@ public final class MeshBuilder {
      * @throws NullPointerException if the matrix is null
      * @since 0.0.2
      */
+    @Contract(value = "null -> fail; !null -> this", mutates = "this")
     public @NotNull MeshBuilder transformation(@NotNull Matrix4f transformation) {
         this.transformation = new Matrix4f(Objects.requireNonNull(transformation));
         return this;
@@ -97,6 +101,7 @@ public final class MeshBuilder {
      * @throws NullPointerException if the modifier is null
      * @since 0.0.1
      */
+    @Contract("null -> fail; !null -> this")
     public @NotNull MeshBuilder matrixModifier(@NotNull Consumer<Matrix4f> modifier) {
         Objects.requireNonNull(modifier).accept(transformation);
         return this;
@@ -130,7 +135,7 @@ public final class MeshBuilder {
         return load(shapes, null);
     }
 
-    private MeshBuilder load(List<MeshShape> shapes, MeshParseResult source) {
+    private @NotNull MeshBuilder load(@NotNull List<MeshShape> shapes, @Nullable MeshParseResult source) {
         var batch = new MeshParallelograms(image, name);
         MeshFace.inferAndBuild(shapes, (shape, face) -> batch.add(shape, face,
                 source == null ? null : source.material(batch.shapeCount)));

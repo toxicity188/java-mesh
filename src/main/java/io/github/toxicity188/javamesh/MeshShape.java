@@ -35,7 +35,7 @@ import static java.lang.Math.*;
  * @param texture optional texture name referenced by the source mesh material
  * @since 0.0.1
  */
-public record MeshShape(@NotNull @Unmodifiable List<MeshPoint> points, @Nullable String texture) {
+public record MeshShape(@NotNull List<MeshPoint> points, @Nullable String texture) {
 
     private static final float EPS = 1.0e-6f;
 

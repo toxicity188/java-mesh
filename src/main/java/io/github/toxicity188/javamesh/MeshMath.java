@@ -8,6 +8,7 @@
 package io.github.toxicity188.javamesh;
 
 import com.google.gson.JsonArray;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
@@ -99,7 +100,9 @@ final class MeshMath {
         return mat.translateLocal(-p0.x + 0.5F, p0.y + 0.5F, -p0.z + 0.5F);
     }
 
-    static @Nullable Matrix4f parallelogramMat(Vector3f a, Vector3f b, Vector3f c, Vector3f d) {
+    static @Nullable Matrix4f parallelogramMat(
+            @NotNull Vector3f a, @NotNull Vector3f b, @NotNull Vector3f c, @NotNull Vector3f d
+    ) {
         var x = new Vector3d(b).sub(a);
         var y = new Vector3d(d).sub(a);
         var width = x.length();
@@ -186,7 +189,7 @@ final class MeshMath {
             | (b & 0xFF);
     }
 
-    private static Vector2f uvToPixel(@NotNull Vector2f uv, int width, int height) {
+    private static @NotNull Vector2f uvToPixel(@NotNull Vector2f uv, int width, int height) {
         return new Vector2f(
             uv.x * (width - 1),
             (1.0f - uv.y) * (height - 1)
@@ -204,6 +207,7 @@ final class MeshMath {
         return !(hasNeg && hasPos);
     }
 
+    @Contract(pure = true)
     private static float sign(float px, float py, @NotNull Vector2f a, @NotNull Vector2f b) {
         var abx = (double) a.x - b.x;
         var aby = (double) a.y - b.y;

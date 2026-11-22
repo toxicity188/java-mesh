@@ -14,6 +14,7 @@ import io.github.toxicity188.javamesh.parser.MeshParseResult;
 import io.github.toxicity188.javamesh.parser.MeshParser;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector3i;
@@ -123,7 +124,7 @@ public enum ObjParser implements MeshParser {
 
 
         @Override
-        public @NotNull List<MeshShape> toShape() {
+        public @NotNull @Unmodifiable List<MeshShape> toShape() {
             return f.stream()
                 .map(i -> new MeshShape(
                     i.indexes.stream().map(vec -> new MeshPoint(v.get(vec.x), vt.get(vec.y))).toList(),

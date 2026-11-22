@@ -7,9 +7,9 @@
 
 package io.github.toxicity188.javamesh.parser;
 
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.Unmodifiable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,7 +40,7 @@ import java.util.Objects;
 public record MeshParseContext(
     @NotNull String name,
     float scale,
-    @NotNull @Unmodifiable Map<String, StreamLoader> loaders
+    @NotNull Map<String, StreamLoader> loaders
 ) {
 
     /**
@@ -117,6 +117,7 @@ public record MeshParseContext(
          * @return this builder
          * @since 0.0.1
          */
+        @Contract(value = "_ -> this", mutates = "this")
         public @NotNull Builder scale(float scale) {
             this.scale = scale;
             return this;
@@ -125,7 +126,7 @@ public record MeshParseContext(
         /**
          * Finalizes the parser context.
          *
-         * @return an immutable parser context
+         * @return a parser context with an unmodifiable view of the builder's loaders
          * @since 0.0.1
          */
         public @NotNull MeshParseContext build() {

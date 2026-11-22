@@ -7,6 +7,8 @@
 
 package io.github.toxicity188.javamesh;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 import org.joml.Matrix4f;
 
@@ -19,13 +21,13 @@ final class MeshParallelograms {
     private final Map<Edge, Owners> edges = new HashMap<>();
     int shapeCount;
 
-    MeshParallelograms(MeshNamedImage images, MeshTriangleName triangles) {
+    MeshParallelograms(@NotNull MeshNamedImage images, @NotNull MeshTriangleName triangles) {
         this.images = images;
         this.triangles = triangles;
     }
 
-    private record Edge(Vector3f a, Vector3f b) {
-        static Edge of(Vector3f a, Vector3f b) {
+    private record Edge(@NotNull Vector3f a, @NotNull Vector3f b) {
+        static @NotNull Edge of(@NotNull Vector3f a, @NotNull Vector3f b) {
             int order = Float.compare(a.x, b.x);
             if (order == 0) order = Float.compare(a.y, b.y);
             if (order == 0) order = Float.compare(a.z, b.z);
@@ -39,10 +41,10 @@ final class MeshParallelograms {
         int second;
     }
 
-    private record Triangle(MeshPoint[] points, Owners[] edges, MeshMatrix matrix,
-                            MeshFace face, String texture, String material) {}
+    private record Triangle(MeshPoint @NotNull [] points, Owners @NotNull [] edges, @NotNull MeshMatrix matrix,
+                            @NotNull MeshFace face, @Nullable String texture, @Nullable String material) {}
 
-    void add(MeshShape shape, MeshFace face, String material) {
+    void add(@NotNull MeshShape shape, @NotNull MeshFace face, @Nullable String material) {
         shapeCount++;
         var points = shape.points();
         var texture = images.get(shape.texture());
@@ -57,7 +59,8 @@ final class MeshParallelograms {
         }
     }
 
-    private void add(MeshPoint a, MeshPoint b, MeshPoint c, MeshImage image, String texture, String material, MeshFace face) {
+    private void add(@NotNull MeshPoint a, @NotNull MeshPoint b, @NotNull MeshPoint c,
+                     @NotNull MeshImage image, @Nullable String texture, @Nullable String material, @NotNull MeshFace face) {
         var points = new MeshPoint[]{a, b, c};
         var owners = new Owners[3];
         for (int i = 0; i < 3; i++) {
@@ -71,7 +74,7 @@ final class MeshParallelograms {
         faces.add(new Triangle(points, owners, MeshMath.triangleMat(a, b, c, image), face, texture, material));
     }
 
-    void emit(List<MeshModel> models) {
+    void emit(@NotNull List<MeshModel> models) {
         var consumed = new boolean[faces.size()];
         for (int i = 0; i < faces.size(); i++) {
             var t = faces.get(i);
@@ -83,7 +86,7 @@ final class MeshParallelograms {
         }
     }
 
-    private Matrix4f merge(int index, Triangle t, boolean[] consumed) {
+    private @Nullable Matrix4f merge(int index, @NotNull Triangle t, boolean @NotNull [] consumed) {
         for (var edge : t.edges) if (edge.count > 2) return null;
         for (int i = 0; i < 3; i++) {
             var edge = t.edges[i];

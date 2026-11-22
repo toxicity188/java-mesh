@@ -9,7 +9,6 @@ package io.github.toxicity188.javamesh;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.Collections;
 import java.util.Map;
@@ -25,7 +24,7 @@ import java.util.Map;
  * @since 0.0.1
  */
 public record MeshNamedImage(
-    @NotNull @Unmodifiable Map<String, MeshImage> images
+    @NotNull Map<String, MeshImage> images
 ) {
 
     public static final MeshNamedImage EMPTY = new MeshNamedImage(Collections.emptyMap());
