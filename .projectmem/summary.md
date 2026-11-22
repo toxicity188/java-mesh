@@ -1,0 +1,42 @@
+# projectmem - java-mesh
+
+_Last updated: 2026-11-22_
+
+## Project purpose
+A library for converting mesh models for use in Minecraft Java Edition.
+
+## Recent issues
+- [DONE] #legacy_4f2a Legacy issue: fix: group (fixed)
+
+## Decisions
+- No decisions logged yet.
+
+## Notes
+- Initial Commit
+- chore: bump build
+- Root AGENTS.md documents java-mesh's Java 21 conversion and parser boundaries, public Javadoc conventions, and Gradle verification commands. [AGENTS.md:1]
+
+## Key files
+- `.editorconfig`
+- `.gitattributes`
+- `.gitignore`
+- `.idea/codeStyles/codeStyleConfig.xml`
+- `LICENSE.md`
+- `LICENSE_HEADER`
+- `README.md`
+- `build.gradle.kts`
+- `gradle.properties`
+- `gradle/wrapper/gradle-wrapper.jar`
+- `gradle/wrapper/gradle-wrapper.properties`
+- `gradlew`
+- `gradlew.bat`
+- `settings.gradle.kts`
+- `src/main/java/io/github/toxicity188/javamesh/MeshBuilder.java`
+- `src/main/java/io/github/toxicity188/javamesh/MeshFace.java`
+- `src/main/java/io/github/toxicity188/javamesh/MeshImage.java`
+- `src/main/java/io/github/toxicity188/javamesh/MeshMath.java`
+- `src/main/java/io/github/toxicity188/javamesh/MeshMatrix.java`
+- `src/main/java/io/github/toxicity188/javamesh/MeshModel.java`
+
+## Open questions
+- None logged yet.
