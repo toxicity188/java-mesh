@@ -221,7 +221,7 @@ final class ParallelogramTest {
     @Test void compositeTransformReplacesAndCopies() {
         var builder = MeshBuilder.of(NAMES);
         var initial = builder.toJson();
-        //assertEquals(MeshMath.toJson(new Matrix4f()), initial.get("transformation"));
+        assertNull(initial.get("transformation"));
         var supplied = new Matrix4f().rotateY(0.7f);
         var expected = new Matrix4f(supplied).scale(2);
         builder.matrixModifier(m -> m.translate(1, 2, 3))
@@ -230,7 +230,7 @@ final class ParallelogramTest {
         assertEquals(MeshMath.toJson(new Matrix4f().rotateY(0.7f)), MeshMath.toJson(supplied));
         supplied.zero();
         assertEquals(MeshMath.toJson(expected), builder.toJson().get("transformation"));
-        assertEquals(MeshMath.toJson(new Matrix4f()), initial.get("transformation"));
+        assertNull(initial.get("transformation"));
     }
 
     @Test void modifiersAccumulateImmediatelyOnParentOnly() {

@@ -18,6 +18,7 @@ A library for converting mesh models for use in Minecraft Java Edition.
 ## Decisions
 - Publish from a GitHub Release whose tag exactly matches project_version. Reuse the Vanniktech Maven publication for Central and GitHub Packages and use the workflow GITHUB_TOKEN for Packages. [.github/workflows/release.yml]
 - Refactor: refactor: simplify method [src/main/java/io/github/toxicity188/javamesh/MeshBuilder.java]
+- Refactor: refactor: annotation [src/main/java/io/github/toxicity188/javamesh/MeshBuilder.java]
 
 ## Notes
 - Initial Commit
