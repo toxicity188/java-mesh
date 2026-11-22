@@ -39,7 +39,7 @@ jobs:
 
       - name: Build and test library
         id: build
-        run: bash gradlew :library:build --stacktrace
+        run: bash gradlew build --stacktrace
 
       - name: Publish to Maven Central
         env:
@@ -47,7 +47,7 @@ jobs:
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
-        run: bash gradlew :library:publishAndReleaseToMavenCentral --stacktrace
+        run: bash gradlew publishAndReleaseToMavenCentral --stacktrace
 
       - name: Publish to GitHub Packages
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
@@ -55,4 +55,4 @@ jobs:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
           PACKAGES_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: bash gradlew :library:publishAllPublicationsToGitHubPackagesRepository --stacktrace
+        run: bash gradlew publishAllPublicationsToGitHubPackagesRepository --stacktrace
