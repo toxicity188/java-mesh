@@ -5,8 +5,8 @@ import com.vanniktech.maven.publish.SourcesJar
 plugins {
     java
     signing
-    id("com.vanniktech.maven.publish") version "0.36.0"
-    id("dev.yumi.gradle.licenser") version "2.2.+"
+    id("com.vanniktech.maven.publish") version "0.37.0"
+    id("dev.yumi.gradle.licenser") version "4.0.+"
 }
 
 val projectVersion = property("project_version").toString()
@@ -23,12 +23,12 @@ signing {
 }
 
 dependencies {
-    implementation("org.joml:joml:1.10.8")
-    implementation("com.google.code.gson:gson:2.13.2")
+    implementation("org.joml:joml:1.10.9")
+    implementation("com.google.code.gson:gson:2.15.0")
     implementation("org.jetbrains:annotations:26.1.0")
-    implementation("it.unimi.dsi:fastutil:8.5.18")
+    implementation("it.unimi.dsi:fastutil:8.5.19")
 
-    testImplementation(platform("org.junit:junit-bom:6.0.3"))
+    testImplementation(platform("org.junit:junit-bom:6.1.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
